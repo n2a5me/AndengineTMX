@@ -61,6 +61,8 @@ public class TMXParser extends DefaultHandler implements TMXConstants {
 	private boolean mInData;
 	private boolean mInObjectGroup;
 	private boolean mInObject;
+	private boolean mIsFormFile;
+	private String mExternalTilePath="";
 
 	// ===========================================================
 	// Constructors
@@ -109,8 +111,11 @@ public class TMXParser extends DefaultHandler implements TMXConstants {
 			this.mTMXTiledMap.addTMXTileSet(tmxTileSet);
 		} else if(pLocalName.equals(TMXConstants.TAG_IMAGE)){
 			this.mInImage = true;
-			final ArrayList<TMXTileSet> tmxTileSets = this.mTMXTiledMap.getTMXTileSets();
-			tmxTileSets.get(tmxTileSets.size() - 1).setImageSource(this.mAssetManager, this.mTextureManager, pAttributes);
+            final ArrayList<TMXTileSet> tmxTileSets = this.mTMXTiledMap.getTMXTileSets();
+            if ( this.mIsFormFile )
+                    tmxTileSets.get(tmxTileSets.size() - 1).setImageSource(this.mExternalTilePath, this.mTextureManager, pAttributes);
+            else
+                    tmxTileSets.get(tmxTileSets.size() - 1).setImageSource(this.mAssetManager, this.mTextureManager, pAttributes);
 		} else if(pLocalName.equals(TMXConstants.TAG_TILE)) {
 			this.mInTile = true;
 			if(this.mInTileset) {
@@ -219,7 +224,25 @@ public class TMXParser extends DefaultHandler implements TMXConstants {
 		/* Reset the StringBuilder. */
 		this.mStringBuilder.setLength(0);
 	}
-
+	
+	public boolean isFromFile(){
+		return mIsFormFile;
+	}
+	
+	public String getExternalTilePath(){
+		return mExternalTilePath;
+	}
+	
+	public TMXParser(final String externalPath, final TextureManager pTextureManager, final TextureOptions pTextureOptions, final VertexBufferObjectManager pVertexBufferObjectManager, final ITMXTilePropertiesListener pTMXTilePropertyListener) {
+        this.mAssetManager = null;
+        this.mTextureManager = pTextureManager;
+        this.mTextureOptions = pTextureOptions;
+        this.mVertexBufferObjectManager = pVertexBufferObjectManager;
+        this.mTMXTilePropertyListener = pTMXTilePropertyListener;
+       
+        this.mIsFormFile = true;
+        this.mExternalTilePath = externalPath;
+}
 	// ===========================================================
 	// Methods
 	// ===========================================================

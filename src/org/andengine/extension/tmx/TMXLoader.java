@@ -142,4 +142,26 @@ public class TMXLoader {
 
 		public void onTMXTileWithPropertiesCreated(final TMXTiledMap pTMXTiledMap, final TMXLayer pTMXLayer, final TMXTile pTMXTile, final TMXProperties<TMXTileProperty> pTMXTileProperties);
 	}
+	
+	public TMXTiledMap loadFromFile(final String externalTilePath, final InputStream pInputStream) throws TMXLoadException {
+        try {
+                final SAXParserFactory spf = SAXParserFactory.newInstance();
+                final SAXParser sp = spf.newSAXParser();
+
+                final XMLReader xr = sp.getXMLReader();
+                final TMXParser tmxParser = new TMXParser(externalTilePath, this.mTextureManager, this.mTextureOptions, this.mVertexBufferObjectManager, this.mTMXTilePropertyListener);
+                xr.setContentHandler(tmxParser);
+
+                xr.parse(new InputSource(new BufferedInputStream(pInputStream)));
+
+                return tmxParser.getTMXTiledMap();
+        } catch (final SAXException e) {
+                throw new TMXLoadException(e);
+        } catch (final ParserConfigurationException pe) {
+                /* Doesn't happen. */
+                return null;
+        } catch (final IOException e) {
+                throw new TMXLoadException(e);
+        }
+}
 }

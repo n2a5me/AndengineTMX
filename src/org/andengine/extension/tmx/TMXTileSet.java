@@ -1,5 +1,7 @@
 package org.andengine.extension.tmx;
 
+import java.io.File;
+
 import org.andengine.extension.tmx.util.constants.TMXConstants;
 import org.andengine.extension.tmx.util.exception.TMXParseException;
 import org.andengine.opengl.texture.ITexture;
@@ -8,6 +10,7 @@ import org.andengine.opengl.texture.TextureOptions;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory;
 import org.andengine.opengl.texture.atlas.bitmap.source.AssetBitmapTextureAtlasSource;
+import org.andengine.opengl.texture.atlas.bitmap.source.FileBitmapTextureAtlasSource;
 import org.andengine.opengl.texture.atlas.bitmap.source.decorator.ColorKeyBitmapTextureAtlasSourceDecorator;
 import org.andengine.opengl.texture.atlas.bitmap.source.decorator.shape.RectangleBitmapTextureAtlasSourceDecoratorShape;
 import org.andengine.opengl.texture.bitmap.BitmapTextureFormat;
@@ -185,6 +188,29 @@ public class TMXTileSet implements TMXConstants {
 		return count;
 	}
 
+	public void setImageSource(final String externalTilePath, final TextureManager pTextureManager, final Attributes pAttributes) throws TMXParseException {
+        this.mImageSource = pAttributes.getValue("", TMXConstants.TAG_IMAGE_ATTRIBUTE_SOURCE);
+
+        File imageFile = new File(externalTilePath+this.mImageSource);
+        FileBitmapTextureAtlasSource fileBitmapTextureAtlasSource = FileBitmapTextureAtlasSource.create(imageFile);
+        this.mTilesHorizontal = TMXTileSet.determineCount(fileBitmapTextureAtlasSource.getTextureWidth(), this.mTileWidth, this.mMargin, this.mSpacing);
+        this.mTilesVertical = TMXTileSet.determineCount(fileBitmapTextureAtlasSource.getTextureHeight(), this.mTileHeight, this.mMargin, this.mSpacing);
+        final BitmapTextureAtlas bitmapTextureAtlas = new BitmapTextureAtlas(pTextureManager, fileBitmapTextureAtlasSource.getTextureWidth(), fileBitmapTextureAtlasSource.getTextureHeight(), BitmapTextureFormat.RGBA_8888, this.mTextureOptions); // TODO Make TextureFormat variable
+       
+        final String transparentColor = SAXUtils.getAttribute(pAttributes, TMXConstants.TAG_IMAGE_ATTRIBUTE_TRANS, null);
+        if(transparentColor == null) {
+                BitmapTextureAtlasTextureRegionFactory.createFromSource(bitmapTextureAtlas, fileBitmapTextureAtlasSource, 0, 0);
+        } else {
+                try{
+                        final int color = Color.parseColor((transparentColor.charAt(0) == '#') ? transparentColor : "#" + transparentColor);
+                        BitmapTextureAtlasTextureRegionFactory.createFromSource(bitmapTextureAtlas, new ColorKeyBitmapTextureAtlasSourceDecorator(fileBitmapTextureAtlasSource, RectangleBitmapTextureAtlasSourceDecoratorShape.getDefaultInstance(), color), 0, 0);
+                } catch (final IllegalArgumentException e) {
+                        throw new TMXParseException("Illegal value: '" + transparentColor + "' for attribute 'trans' supplied!", e);
+                }
+        }
+        this.mTexture = bitmapTextureAtlas;
+        this.mTexture.load();
+}
 	// ===========================================================
 	// Inner and Anonymous Classes
 	// ===========================================================
